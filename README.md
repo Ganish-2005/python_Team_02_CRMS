@@ -181,7 +181,7 @@ Create new users through the registration page or admin panel.
 ## 📂 Project Structure
 
 ```
-Hostel_Management/
+CampusRMS/
 ├── backend/
 │   ├── api/                    # Django app
 │   │   ├── migrations/         # Database migrations
