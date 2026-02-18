@@ -185,24 +185,55 @@ Hostel_Management/
 ├── backend/
 │   ├── api/                    # Django app
 │   │   ├── migrations/         # Database migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── 0002_add_admin_role.py
+│   │   │   └── 0003_add_phone_unique_constraint.py
 │   │   ├── management/         # Custom commands
-│   │   ├── models.py           # Database models
+│   │   │   └── commands/
+│   │   │       └── create_admin.py
+│   │   ├── models.py           # Database models (User, Resource, Booking)
 │   │   ├── serializers.py      # API serializers
 │   │   ├── views.py            # API views
-│   │   └── urls.py             # API routes
+│   │   ├── urls.py             # API routes
+│   │   └── admin.py            # Django admin configuration
 │   ├── campus_rms/             # Django project settings
+│   │   ├── settings.py         # Project settings
+│   │   ├── urls.py             # Main URL configuration
+│   │   └── wsgi.py             # WSGI configuration
 │   ├── manage.py               # Django management script
 │   ├── requirements.txt        # Python dependencies
 │   └── fix_user_status.py      # User status fix script
 ├── frontend/
+│   ├── public/                 # Static assets
 │   ├── src/
-│   │   ├── components/         # React components
+│   │   ├── components/         # Reusable React components
+│   │   │   ├── Layout.jsx      # Main layout wrapper
+│   │   │   ├── Navbar.jsx      # Top navigation bar
+│   │   │   ├── Sidebar.jsx     # Side navigation menu
+│   │   │   └── StatCard.jsx    # Dashboard statistics card
 │   │   ├── pages/              # Page components
+│   │   │   ├── LoginPage.jsx           # User login
+│   │   │   ├── RegisterPage.jsx        # User registration
+│   │   │   ├── DashboardPage.jsx       # Main dashboard
+│   │   │   ├── UsersListPage.jsx       # Users management (Admin)
+│   │   │   ├── AddUserPage.jsx         # Add new user (Admin)
+│   │   │   ├── EditUserPage.jsx        # Edit user (Admin)
+│   │   │   ├── ResourcesListPage.jsx   # Resources list (Staff/Admin)
+│   │   │   ├── AddResourcePage.jsx     # Add resource (Staff/Admin)
+│   │   │   ├── BookingsListPage.jsx    # Bookings list
+│   │   │   ├── AddBookingPage.jsx      # Create booking
+│   │   │   └── EditBookingPage.jsx     # Edit booking
 │   │   ├── services/           # API services
-│   │   └── App.jsx             # Main app component
+│   │   │   └── api.js          # API calls (axios/fetch)
+│   │   ├── App.jsx             # Main app component with routes
+│   │   ├── index.jsx           # React entry point
+│   │   └── index.css           # Global styles (Tailwind)
 │   ├── package.json            # Node dependencies
-│   └── vite.config.ts          # Vite configuration
-└── README.md                   # This file
+│   ├── vite.config.ts          # Vite configuration
+│   ├── tailwind.config.js      # Tailwind CSS configuration
+│   └── postcss.config.js       # PostCSS configuration
+├── README.md                   # Project documentation
+└── POSTMAN_API_TESTING.md      # API testing guide
 ```
 
 ## 🔧 Common Commands
