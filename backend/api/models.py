@@ -5,6 +5,7 @@ class User(models.Model):
     ROLE_CHOICES = [
         ('STUDENT', 'Student'),
         ('STAFF', 'Staff'),
+        ('ADMIN', 'Admin'),
     ]
     
     STATUS_CHOICES = [
@@ -15,7 +16,7 @@ class User(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
     created_at = models.DateTimeField(auto_now_add=True)

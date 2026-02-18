@@ -254,8 +254,27 @@ export function DashboardPage() {
   return (
     <Layout title="Dashboard">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-warm-900">Welcome back, {currentUser?.name || 'Admin'}!</h1>
-        <p className="text-warm-500">System overview and management</p>
+        <h1 className="text-2xl font-bold text-warm-900">
+          Welcome back, {currentUser?.name || 'Admin'}!
+          {currentUser?.role === 'ADMIN' && (
+            <span className="ml-2 px-3 py-1 bg-terracotta-100 text-terracotta-700 text-sm font-medium rounded-full">
+              Administrator
+            </span>
+          )}
+          {currentUser?.role === 'STAFF' && (
+            <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+              Staff Member
+            </span>
+          )}
+        </h1>
+        <p className="text-warm-500">
+          {currentUser?.role === 'ADMIN' 
+            ? 'Full system control and management' 
+            : currentUser?.role === 'STAFF'
+            ? 'Resource management and booking'
+            : 'System overview and management'
+          }
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -300,51 +319,93 @@ export function DashboardPage() {
             <h2 className="text-lg font-semibold text-warm-900">Quick Actions</h2>
           </div>
           <div className="space-y-3">
-            <Link
-              to="/bookings"
-              className="flex items-center justify-between p-4 bg-terracotta-50 hover:bg-terracotta-100 rounded-xl border border-terracotta-200 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-terracotta-600 rounded-lg">
-                  <ClockIcon className="w-5 h-5 text-white" />
+            {currentUser?.role === 'ADMIN' && (
+              <Link
+                to="/bookings"
+                className="flex items-center justify-between p-4 bg-terracotta-50 hover:bg-terracotta-100 rounded-xl border border-terracotta-200 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-terracotta-600 rounded-lg">
+                    <ClockIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-warm-900">Pending Approvals</h3>
+                    <p className="text-sm text-warm-600">{stats.pendingBookings} bookings waiting</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-warm-900">Pending Approvals</h3>
-                  <p className="text-sm text-warm-600">{stats.pendingBookings} bookings waiting</p>
-                </div>
-              </div>
-              <span className="text-terracotta-600 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-            <Link
-              to="/users/add"
-              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <UsersIcon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-warm-900">Add User</h3>
-                  <p className="text-sm text-warm-600">Create new user account</p>
-                </div>
-              </div>
-              <span className="text-blue-600 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
-            <Link
-              to="/resources/add"
-              className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-600 rounded-lg">
-                  <BoxIcon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-warm-900">Add Resource</h3>
-                  <p className="text-sm text-warm-600">Add new resource</p>
-                </div>
-              </div>
-              <span className="text-emerald-600 group-hover:translate-x-1 transition-transform">→</span>
-            </Link>
+                <span className="text-terracotta-600 group-hover:translate-x-1 transition-transform">→</span>
+              </Link>
+            )}
+            
+            {(currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF') && (
+              <>
+                <Link
+                  to="/resources/add"
+                  className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-600 rounded-lg">
+                      <BoxIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900">Add Resource</h3>
+                      <p className="text-sm text-warm-600">Add new resource</p>
+                    </div>
+                  </div>
+                  <span className="text-emerald-600 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+                <Link
+                  to="/resources"
+                  className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-600 rounded-lg">
+                      <BoxIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900">Manage Resources</h3>
+                      <p className="text-sm text-warm-600">View and edit resources</p>
+                    </div>
+                  </div>
+                  <span className="text-blue-600 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+              </>
+            )}
+            
+            {currentUser?.role === 'ADMIN' && (
+              <>
+                <Link
+                  to="/users/add"
+                  className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-600 rounded-lg">
+                      <UsersIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900">Add User</h3>
+                      <p className="text-sm text-warm-600">Create new user account</p>
+                    </div>
+                  </div>
+                  <span className="text-purple-600 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+                <Link
+                  to="/users"
+                  className="flex items-center justify-between p-4 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-600 rounded-lg">
+                      <UsersIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900">Manage Users</h3>
+                      <p className="text-sm text-warm-600">View and edit all users</p>
+                    </div>
+                  </div>
+                  <span className="text-amber-600 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
 

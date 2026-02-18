@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { CalendarIcon, MailIcon, LockIcon, ArrowRightIcon } from 'lucide-react';
+import { CalendarIcon, MailIcon, LockIcon, ArrowRightIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authAPI } from '../services/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,12 +22,14 @@ export function LoginPage() {
       [name]: value
     }));
     setError('');
+    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await authAPI.login(formData.email, formData.password);
@@ -33,11 +37,15 @@ export function LoginPage() {
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Navigate to dashboard
-      navigate('/');
+      // Show success message
+      setSuccess('Login successful! Redirecting to dashboard...');
       
-      // Reload to update navbar
-      window.location.reload();
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/');
+        // Reload to update navbar
+        window.location.reload();
+      }, 1500);
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -66,6 +74,12 @@ export function LoginPage() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {success}
               </div>
             )}
 
@@ -98,14 +112,25 @@ export function LoginPage() {
                   <LockIcon className="h-5 w-5 text-warm-400" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-warm-200 rounded-xl text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
+                  className="block w-full pl-10 pr-10 py-3 border border-warm-200 rounded-xl text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-warm-400 hover:text-warm-600 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             </div>
 

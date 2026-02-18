@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import os
 import sys
+import pymysql
+
+# Use PyMySQL as a drop-in replacement for MySQLdb (mysqlclient)
+pymysql.install_as_MySQLdb()
 
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'campus_rms.settings')

@@ -18,7 +18,13 @@ const apiCall = async (endpoint, options = {}) => {
       try {
         const error = await response.json();
         // Handle Django REST Framework validation errors
-        if (error.resource) {
+        if (error.phone) {
+          errorMessage = Array.isArray(error.phone) ? error.phone[0] : error.phone;
+        } else if (error.email) {
+          errorMessage = Array.isArray(error.email) ? error.email[0] : error.email;
+        } else if (error.name) {
+          errorMessage = Array.isArray(error.name) ? error.name[0] : error.name;
+        } else if (error.resource) {
           errorMessage = error.resource;
         } else if (error.user) {
           errorMessage = error.user;
@@ -38,6 +44,12 @@ const apiCall = async (endpoint, options = {}) => {
       }
       throw new Error(errorMessage);
     }
+    
+    // Handle 204 No Content responses (common for DELETE operations)
+    if (response.status === 204) {
+      return null;
+    }
+    
     return await response.json();
   } catch (error) {
     console.error('API Error:', error);
@@ -86,4 +98,13 @@ export const authAPI = {
     method: 'POST', 
     body: JSON.stringify({ email, password }) 
   }),
+  logout: (user_id) => apiCall('/logout/', {
+    method: 'POST',
+    body: JSON.stringify({ user_id })
+  }),
+};
+
+// Admin API
+export const adminAPI = {
+  getStats: () => apiCall('/admin/stats/'),
 };

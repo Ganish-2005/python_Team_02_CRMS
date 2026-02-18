@@ -16,6 +16,7 @@ export function ResourcesListPage() {
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filterType, setFilterType] = useState('ALL');
 
   useEffect(() => {
     fetchResources();
@@ -62,6 +63,12 @@ export function ResourcesListPage() {
     show: { opacity: 1, y: 0 }
   };
 
+  // Filter resources based on selected type
+  const filteredResources = resources.filter(resource => {
+    if (filterType === 'ALL') return true;
+    return resource.type === filterType;
+  });
+
   if (loading) {
     return (
       <Layout title="Resources">
@@ -86,19 +93,54 @@ export function ResourcesListPage() {
     <Layout title="Resources">
       <div className="flex items-center justify-between mb-8">
         <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-          <button className="px-4 py-2 bg-white border border-warm-200 rounded-xl text-sm font-medium text-warm-900 shadow-sm hover:bg-warm-50 whitespace-nowrap">
+          <button 
+            onClick={() => setFilterType('ALL')}
+            className={`px-4 py-2 border rounded-xl text-sm font-medium shadow-sm whitespace-nowrap transition-colors ${
+              filterType === 'ALL'
+                ? 'bg-white border-warm-200 text-warm-900'
+                : 'bg-transparent border-transparent text-warm-500 hover:text-warm-900 hover:bg-white/50'
+            }`}
+          >
             All
           </button>
-          <button className="px-4 py-2 bg-transparent border border-transparent rounded-xl text-sm font-medium text-warm-500 hover:text-warm-900 hover:bg-white/50 whitespace-nowrap">
+          <button 
+            onClick={() => setFilterType('LAB')}
+            className={`px-4 py-2 border rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              filterType === 'LAB'
+                ? 'bg-white border-warm-200 text-warm-900 shadow-sm'
+                : 'bg-transparent border-transparent text-warm-500 hover:text-warm-900 hover:bg-white/50'
+            }`}
+          >
             Lab
           </button>
-          <button className="px-4 py-2 bg-transparent border border-transparent rounded-xl text-sm font-medium text-warm-500 hover:text-warm-900 hover:bg-white/50 whitespace-nowrap">
+          <button 
+            onClick={() => setFilterType('CLASSROOM')}
+            className={`px-4 py-2 border rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              filterType === 'CLASSROOM'
+                ? 'bg-white border-warm-200 text-warm-900 shadow-sm'
+                : 'bg-transparent border-transparent text-warm-500 hover:text-warm-900 hover:bg-white/50'
+            }`}
+          >
             Classroom
           </button>
-          <button className="px-4 py-2 bg-transparent border border-transparent rounded-xl text-sm font-medium text-warm-500 hover:text-warm-900 hover:bg-white/50 whitespace-nowrap">
+          <button 
+            onClick={() => setFilterType('EVENT_HALL')}
+            className={`px-4 py-2 border rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              filterType === 'EVENT_HALL'
+                ? 'bg-white border-warm-200 text-warm-900 shadow-sm'
+                : 'bg-transparent border-transparent text-warm-500 hover:text-warm-900 hover:bg-white/50'
+            }`}
+          >
             Event Hall
           </button>
-          <button className="px-4 py-2 bg-transparent border border-transparent rounded-xl text-sm font-medium text-warm-500 hover:text-warm-900 hover:bg-white/50 whitespace-nowrap">
+          <button 
+            onClick={() => setFilterType('COMPUTER')}
+            className={`px-4 py-2 border rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              filterType === 'COMPUTER'
+                ? 'bg-white border-warm-200 text-warm-900 shadow-sm'
+                : 'bg-transparent border-transparent text-warm-500 hover:text-warm-900 hover:bg-white/50'
+            }`}
+          >
             Computer
           </button>
         </div>
@@ -112,16 +154,22 @@ export function ResourcesListPage() {
         </Link>
       </div>
 
-      {resources.length === 0 ? (
+      {filteredResources.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-12 text-center">
-          <p className="text-warm-500 mb-4">No resources found</p>
-          <Link
-            to="/resources/add"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta-600 hover:bg-terracotta-700 text-white rounded-xl text-sm font-medium transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Add First Resource
-          </Link>
+          {resources.length === 0 ? (
+            <>
+              <p className="text-warm-500 mb-4">No resources found</p>
+              <Link
+                to="/resources/add"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta-600 hover:bg-terracotta-700 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Add First Resource
+              </Link>
+            </>
+          ) : (
+            <p className="text-warm-500">No resources found for this type</p>
+          )}
         </div>
       ) : (
         <motion.div
@@ -130,7 +178,7 @@ export function ResourcesListPage() {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
-          {resources.map((resource) => {
+          {filteredResources.map((resource) => {
             const Icon = getIcon(resource.type);
             return (
               <motion.div

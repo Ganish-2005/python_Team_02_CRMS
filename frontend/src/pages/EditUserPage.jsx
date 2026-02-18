@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, SaveIcon, CheckIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { userAPI } from '../services/api';
 
-export function AddUserPage() {
+export function EditUserPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
@@ -19,7 +21,33 @@ export function AddUserPage() {
     password: ''
   });
 
+  useEffect(() => {
+    fetchUser();
+  }, [id]);
+
+  const fetchUser = async () => {
+    try {
+      setLoading(true);
+      const user = await userAPI.getById(id);
+      setFormData({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+        password: '' // Don't populate password
+      });
+    } catch (err) {
+      setError('Failed to load user');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const validatePassword = (password) => {
+    if (!password) return []; // Password is optional for updates
+    
     const errors = [];
     
     if (password.length < 8) {
@@ -42,7 +70,7 @@ export function AddUserPage() {
   };
 
   const passwordErrors = formData.password ? validatePassword(formData.password) : [];
-  const isPasswordValid = passwordErrors.length === 0;
+  const isPasswordValid = !formData.password || passwordErrors.length === 0;
 
   const handleChange = (e) => {
     setFormData({
@@ -57,30 +85,46 @@ export function AddUserPage() {
     setError('');
     setSuccess('');
     
-    // Validate password strength
-    if (!isPasswordValid) {
+    // Validate password strength if password is provided
+    if (formData.password && !isPasswordValid) {
       setError('Password does not meet the requirements. Please check below.');
       setIsLoading(false);
       return;
     }
     
     try {
-      await userAPI.create(formData);
-      setSuccess('User created successfully! Redirecting...');
+      // Only include password if it's been changed
+      const updateData = { ...formData };
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      
+      await userAPI.update(id, updateData);
+      setSuccess('User updated successfully! Redirecting...');
       
       // Navigate after showing success message
       setTimeout(() => {
         navigate('/users');
       }, 1500);
     } catch (err) {
-      setError(err.message || 'Failed to create user');
+      setError(err.message || 'Failed to update user');
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <Layout title="Edit User">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-warm-500">Loading user...</div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <Layout title="Add New User">
+    <Layout title="Edit User">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate('/users')}
@@ -95,7 +139,7 @@ export function AddUserPage() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-sm border border-warm-200 p-8"
         >
-          <h2 className="text-xl font-bold text-warm-900 mb-6">User Details</h2>
+          <h2 className="text-xl font-bold text-warm-900 mb-6">Edit User Details</h2>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -185,16 +229,15 @@ export function AddUserPage() {
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-warm-700 mb-1.5">
-                  Password
+                  Password (leave blank to keep current)
                 </label>
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
                   className="block w-full px-4 py-3 border border-warm-200 rounded-xl text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
-                  placeholder="Enter password"
+                  placeholder="Enter new password (optional)"
                 />
                 {formData.password && (
                   <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
@@ -231,7 +274,7 @@ export function AddUserPage() {
                 className="flex items-center gap-2 px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-terracotta-600 hover:bg-terracotta-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-terracotta-500 transition-all disabled:opacity-50"
               >
                 <SaveIcon className="w-4 h-4" />
-                {isLoading ? 'Creating...' : 'Create User'}
+                {isLoading ? 'Updating...' : 'Update User'}
               </button>
             </div>
           </form>

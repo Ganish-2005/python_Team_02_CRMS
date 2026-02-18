@@ -9,6 +9,7 @@ export function AddResourcePage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     type: 'LAB',
@@ -28,14 +29,19 @@ export function AddResourcePage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
     
     try {
       await resourceAPI.create({
         ...formData,
         capacity: parseInt(formData.capacity)
       });
-      alert('Resource created successfully!');
-      navigate('/resources');
+      setSuccess('Resource created successfully! Redirecting...');
+      
+      // Navigate after showing success message
+      setTimeout(() => {
+        navigate('/resources');
+      }, 1500);
     } catch (err) {
       setError(err.message || 'Failed to create resource');
     } finally {
@@ -64,6 +70,12 @@ export function AddResourcePage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+              {success}
             </div>
           )}
 

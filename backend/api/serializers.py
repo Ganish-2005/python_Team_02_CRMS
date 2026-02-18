@@ -54,16 +54,11 @@ class UserSerializer(serializers.ModelSerializer):
     
     def validate_name(self, value):
         """
-        Validate that name is unique (case-insensitive)
+        Name validation - allow duplicates, just check it's not empty
         """
-        # For updates, exclude the current instance
-        queryset = User.objects.filter(name__iexact=value)
-        if self.instance:
-            queryset = queryset.exclude(pk=self.instance.pk)
-        
-        if queryset.exists():
+        if not value or not value.strip():
             raise serializers.ValidationError(
-                "A user with this name already exists."
+                "Name cannot be empty."
             )
         
         return value
@@ -80,6 +75,22 @@ class UserSerializer(serializers.ModelSerializer):
         if queryset.exists():
             raise serializers.ValidationError(
                 "A user with this email already exists."
+            )
+        
+        return value
+    
+    def validate_phone(self, value):
+        """
+        Validate that phone number is unique
+        """
+        # For updates, exclude the current instance
+        queryset = User.objects.filter(phone=value)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise serializers.ValidationError(
+                "A user with this phone number already exists."
             )
         
         return value

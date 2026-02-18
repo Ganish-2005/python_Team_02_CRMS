@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
   CalendarIcon,
@@ -8,17 +8,35 @@ import {
   BookOpenIcon,
   BeakerIcon,
   BuildingIcon,
-  ClockIcon
+  ClockIcon,
+  CheckIcon,
+  XIcon,
+  EditIcon,
+  TrashIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { bookingAPI } from '../services/api';
 
 export function BookingsListPage() {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [processingBooking, setProcessingBooking] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('UPCOMING');
 
   useEffect(() => {
+    // Get current user from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setCurrentUser(user);
+    }
     fetchBookings();
   }, []);
 
@@ -81,6 +99,128 @@ export function BookingsListPage() {
     }
   };
 
+  const handleApproveBooking = async (bookingId) => {
+    try {
+      setProcessingBooking(bookingId);
+      setError('');
+      setSuccess('');
+      await bookingAPI.approve(bookingId);
+      // Refresh bookings list
+      await fetchBookings();
+      setSuccess('Booking approved successfully!');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setError('Failed to approve booking');
+      console.error(err);
+    } finally {
+      setProcessingBooking(null);
+    }
+  };
+
+  const handleRejectBooking = async (bookingId) => {
+    try {
+      setProcessingBooking(bookingId);
+      setError('');
+      setSuccess('');
+      await bookingAPI.reject(bookingId);
+      // Refresh bookings list
+      await fetchBookings();
+      setSuccess('Booking rejected successfully!');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setError('Failed to reject booking');
+      console.error(err);
+    } finally {
+      setProcessingBooking(null);
+    }
+  };
+
+  const handleEditBooking = (bookingId) => {
+    navigate(`/bookings/edit/${bookingId}`);
+  };
+
+  const handleDeleteClick = (booking) => {
+    setBookingToDelete(booking);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!bookingToDelete) return;
+    
+    try {
+      setDeleting(true);
+      setError('');
+      setSuccess('');
+      await bookingAPI.delete(bookingToDelete.id);
+      await fetchBookings();
+      setShowDeleteModal(false);
+      setSuccess(`Booking for "${bookingToDelete.resource_name}" deleted successfully!`);
+      setBookingToDelete(null);
+      
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setShowDeleteModal(false);
+      setError('Failed to delete booking: ' + (err.message || 'Unknown error'));
+      setBookingToDelete(null);
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setBookingToDelete(null);
+  };
+
+  const isAdmin = currentUser && currentUser.role === 'ADMIN';
+  const canEditDelete = (booking) => {
+    // Admin can edit/delete any booking
+    // Users can only edit/delete their own bookings
+    return isAdmin || (currentUser && booking.user === currentUser.id);
+  };
+
+  // Filter bookings based on selected status
+  const filteredBookings = bookings.filter(booking => {
+    const bookingDate = new Date(booking.booking_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    bookingDate.setHours(0, 0, 0, 0);
+    
+    // For today's bookings, check the time slot
+    const isToday = bookingDate.getTime() === today.getTime();
+    
+    if (isToday) {
+      // Extract start time from time slot (e.g., "09:00 - 10:00" -> "09:00")
+      const timeSlotStart = booking.time_slot.split(' - ')[0];
+      const [hours, minutes] = timeSlotStart.split(':').map(Number);
+      
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      // Check if the time slot has passed
+      const isPastTime = hours < currentHour || (hours === currentHour && minutes <= currentMinute);
+      
+      if (filterStatus === 'UPCOMING') {
+        return !isPastTime; // Show only future time slots for today
+      } else if (filterStatus === 'PAST') {
+        return isPastTime; // Show only past time slots for today
+      } else {
+        return true; // ALL - show everything
+      }
+    } else {
+      // For other dates, just compare dates
+      if (filterStatus === 'UPCOMING') {
+        return bookingDate > today;
+      } else if (filterStatus === 'PAST') {
+        return bookingDate < today;
+      } else {
+        return true; // ALL
+      }
+    }
+  });
+
   if (loading) {
     return (
       <Layout title="Bookings">
@@ -103,16 +243,57 @@ export function BookingsListPage() {
 
   return (
     <Layout title="Bookings">
+      {/* Success Message */}
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center justify-between">
+          <span>{success}</span>
+          <button onClick={() => setSuccess('')} className="text-green-700 hover:text-green-900">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="text-red-700 hover:text-red-900">
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="flex bg-white border border-warm-200 rounded-xl p-1 shadow-sm">
-            <button className="px-4 py-1.5 bg-terracotta-50 text-terracotta-700 rounded-lg text-sm font-medium shadow-sm">
+            <button 
+              onClick={() => setFilterStatus('UPCOMING')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterStatus === 'UPCOMING'
+                  ? 'bg-terracotta-50 text-terracotta-700 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-900'
+              }`}
+            >
               Upcoming
             </button>
-            <button className="px-4 py-1.5 text-warm-500 hover:text-warm-900 rounded-lg text-sm font-medium transition-colors">
+            <button 
+              onClick={() => setFilterStatus('PAST')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterStatus === 'PAST'
+                  ? 'bg-terracotta-50 text-terracotta-700 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-900'
+              }`}
+            >
               Past
             </button>
-            <button className="px-4 py-1.5 text-warm-500 hover:text-warm-900 rounded-lg text-sm font-medium transition-colors">
+            <button 
+              onClick={() => setFilterStatus('ALL')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterStatus === 'ALL'
+                  ? 'bg-terracotta-50 text-terracotta-700 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-900'
+              }`}
+            >
               All
             </button>
           </div>
@@ -127,20 +308,26 @@ export function BookingsListPage() {
         </Link>
       </div>
 
-      {bookings.length === 0 ? (
+      {filteredBookings.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-12 text-center">
-          <p className="text-warm-500 mb-4">No bookings found</p>
-          <Link
-            to="/bookings/add"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta-600 hover:bg-terracotta-700 text-white rounded-xl text-sm font-medium transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Create First Booking
-          </Link>
+          {bookings.length === 0 ? (
+            <>
+              <p className="text-warm-500 mb-4">No bookings found</p>
+              <Link
+                to="/bookings/add"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-terracotta-600 hover:bg-terracotta-700 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create First Booking
+              </Link>
+            </>
+          ) : (
+            <p className="text-warm-500">No {filterStatus.toLowerCase()} bookings found</p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          {bookings.map((booking, index) => {
+          {filteredBookings.map((booking, index) => {
             const Icon = getIcon(booking.resource_type);
             return (
               <motion.div
@@ -197,18 +384,101 @@ export function BookingsListPage() {
                   </div>
 
                   <div className="flex items-center justify-between md:justify-end min-w-[120px] mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-warm-100">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(
-                        booking.status
-                      )}`}
-                    >
-                      {booking.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(
+                          booking.status
+                        )}`}
+                      >
+                        {booking.status}
+                      </span>
+                      
+                      {/* Admin approval buttons */}
+                      {isAdmin && booking.status === 'PENDING' && (
+                        <div className="flex gap-1 ml-2">
+                          <button
+                            onClick={() => handleApproveBooking(booking.id)}
+                            disabled={processingBooking === booking.id}
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                            title="Approve booking"
+                          >
+                            <CheckIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleRejectBooking(booking.id)}
+                            disabled={processingBooking === booking.id}
+                            className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                            title="Reject booking"
+                          >
+                            <XIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Edit and Delete buttons for users and admin */}
+                      {canEditDelete(booking) && (
+                        <div className="flex gap-1 ml-2">
+                          <button
+                            onClick={() => handleEditBooking(booking.id)}
+                            className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            title="Edit booking"
+                          >
+                            <EditIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(booking)}
+                            className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                            title="Delete booking"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+          >
+            <h3 className="text-lg font-bold text-warm-900 mb-2">Delete Booking</h3>
+            <p className="text-warm-600 mb-6">
+              Are you sure you want to delete the booking for <span className="font-semibold">{bookingToDelete?.resource_name}</span> on {bookingToDelete?.booking_date}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDeleteCancel}
+                disabled={deleting}
+                className="px-4 py-2 border border-warm-200 text-warm-700 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </Layout>
